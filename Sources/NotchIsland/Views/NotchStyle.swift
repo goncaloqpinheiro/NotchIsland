@@ -38,7 +38,7 @@ enum NotchStyle {
     // MARK: Alerts (AirPods, battery, Focus)
 
     /// Room on each side of the notch for "Charging" and the battery level.
-    static let powerAlertEarWidth: CGFloat = 80
+    static let powerAlertEarWidth: CGFloat = 92
     static let powerAlertDuration: TimeInterval = 3.5
     static let alertTopRadius: CGFloat = 10
     static let alertBottomRadius: CGFloat = 24
