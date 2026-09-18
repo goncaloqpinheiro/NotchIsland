@@ -45,10 +45,11 @@ snapshots: app
 docs-images: app
 	$(APP)/Contents/MacOS/$(APP_NAME) --docs-images docs/images
 
-# Render the animated demo: docs/images/demo.gif for the README, and a 1080p movie
-# with captions in build/demo for sharing. Every frame is drawn by the app itself.
+# Render the animated demo: docs/images/demo.gif for the README, and 1080p movies
+# with captions in build/demo for sharing (30 and 42 seconds). Every frame is drawn by the app itself.
 docs-demo: app
-	$(APP)/Contents/MacOS/$(APP_NAME) --docs-demo docs/images/demo.gif build/demo/NotchIsland-demo.mp4
+	$(APP)/Contents/MacOS/$(APP_NAME) --docs-demo docs/images/demo.gif build/demo/NotchIsland-demo.mp4 \
+		build/demo/NotchIsland-demo-42s.mp4
 
 # Show Natural and Adaptive glass side by side for 20 seconds. The window server
 # draws the glass, so it can't be snapshotted; this is how to see it.
