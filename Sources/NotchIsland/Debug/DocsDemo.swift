@@ -22,7 +22,11 @@ enum DocsDemo {
     /// The README's loop: the top of the screen, 25 frames a second.
     private static func renderGIF(to url: URL) {
         let size = CGSize(width: 520, height: 190)
-        let screen = { (stage: DemoStage) in DemoScreen(stage: stage, width: size.width, height: size.height) }
+        let screen = { (stage: DemoStage) in
+            DemoScreen(stage: stage, width: size.width, height: size.height,
+                       backdrop: DemoScreen.backdrop(width: size.width, height: size.height,
+                                                     menuBarHeight: stage.model.notchSize.height))
+        }
         // A quick pass to learn the colors the animation needs, then the real one.
         var histogram = GIFPalette.Histogram()
         play(DemoScript.loop, fps: 4, size: size, view: screen) { histogram.add($0) }
@@ -45,7 +49,10 @@ enum DocsDemo {
         guard let writer = MovieWriter(url: url, width: Int(size.width) * 2, height: Int(size.height) * 2, fps: 60) else {
             return print("Failed to start \(url.path)")
         }
-        play(0...DemoScript.length, fps: 60, size: size, view: { DemoFilm(stage: $0) }) { writer.add($0) }
+        let film = { (stage: DemoStage) in
+            DemoFilm(stage: stage, backdrop: DemoFilm.backdrop(menuBarHeight: stage.model.notchSize.height))
+        }
+        play(0...DemoScript.length, fps: 60, size: size, view: film) { writer.add($0) }
         print(writer.finish() ? "Wrote \(url.path)" : "Failed to write \(url.path)")
     }
 

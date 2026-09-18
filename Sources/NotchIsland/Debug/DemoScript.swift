@@ -16,7 +16,6 @@ final class DemoStage {
     init() {
         let settings = AppSettings(defaults: ScratchDefaults.make("docs-demo"))
         settings.notchWidthOffset = 12  // a calibrated 15" MacBook Air
-        settings.glassTint = GlassTint(red: 0.62, green: 0.45, blue: 1.0)
         let nowPlaying = NowPlayingModel()
         model = NotchViewModel(settings: settings, nowPlaying: nowPlaying, timer: TimerModel(), stopwatch: StopwatchModel())
         model.detectedNotchSize = CGSize(width: 156, height: 32)

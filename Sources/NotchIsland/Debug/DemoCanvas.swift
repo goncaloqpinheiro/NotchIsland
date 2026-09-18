@@ -6,6 +6,8 @@ struct DemoScreen: View {
     let stage: DemoStage
     let width: CGFloat
     let height: CGFloat
+    /// What adaptive glass shows (see `SnapshotBackdrop.make`).
+    let backdrop: SnapshotBackdrop?
     var showsWallpaper = true
 
     var body: some View {
@@ -17,6 +19,7 @@ struct DemoScreen: View {
             NotchRootView(model: stage.model, actions: NowPlayingActions())
                 .environment(\.isRenderingSnapshot, true)
                 .environment(\.snapshotTime, stage.time)
+                .environment(\.snapshotBackdrop, backdrop)
                 .frame(width: width, height: 300, alignment: .top)
             DemoPointer()
                 .scaleEffect(stage.isClicking ? 0.85 : 1, anchor: .topLeading)
@@ -24,7 +27,16 @@ struct DemoScreen: View {
                 .opacity(stage.showsPointer ? 1 : 0)
         }
         .frame(width: width, height: height, alignment: .top)
+        .coordinateSpace(name: SnapshotBackdrop.space)
         .clipped()
+    }
+
+    /// Prepares the glass for a screen over the plain wallpaper.
+    @MainActor
+    static func backdrop(width: CGFloat, height: CGFloat, menuBarHeight: CGFloat) -> SnapshotBackdrop? {
+        SnapshotBackdrop.make(size: CGSize(width: width, height: height)) {
+            DocsBackground(menuBarHeight: menuBarHeight, showsMenuItems: false)
+        }
     }
 }
 
@@ -32,18 +44,40 @@ struct DemoScreen: View {
 struct DemoFilm: View {
     static let size = CGSize(width: 960, height: 540)
     let stage: DemoStage
+    let backdrop: SnapshotBackdrop?
 
     var body: some View {
         ZStack(alignment: .top) {
-            DocsWallpaper()
-            LinearGradient(colors: [.clear, .black.opacity(0.28)], startPoint: .center, endPoint: .bottom)
-            DemoScreen(stage: stage, width: Self.size.width / 2, height: Self.size.height / 2, showsWallpaper: false)
+            Self.background
+            DemoScreen(stage: stage, width: Self.size.width / 2, height: Self.size.height / 2, backdrop: backdrop,
+                       showsWallpaper: false)
                 .scaleEffect(2, anchor: .top)
             DemoCaptionView(caption: stage.caption)
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, 52)
         }
         .frame(width: Self.size.width, height: Self.size.height)
+    }
+
+    private static var background: some View {
+        ZStack {
+            DocsWallpaper()
+            LinearGradient(colors: [.clear, .black.opacity(0.28)], startPoint: .center, endPoint: .bottom)
+        }
+    }
+
+    /// The glass for the screen, which shows the film's background at half size.
+    @MainActor
+    static func backdrop(menuBarHeight: CGFloat) -> SnapshotBackdrop? {
+        SnapshotBackdrop.make(size: CGSize(width: size.width / 2, height: size.height / 2)) {
+            ZStack(alignment: .top) {
+                background
+                    .frame(width: size.width, height: size.height)
+                    .scaleEffect(0.5, anchor: .topLeading)
+                    .frame(width: size.width / 2, height: size.height / 2, alignment: .topLeading)
+                DocsMenuBar(height: menuBarHeight, showsItems: false)
+            }
+        }
     }
 }
 

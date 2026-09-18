@@ -26,7 +26,11 @@ enum DocsImages {
         model.detectedNotchSize = CGSize(width: 156, height: 32)
 
         func render(_ name: String, height: CGFloat, width: CGFloat = DocsFrame.fullWidth) {
-            save(DocsFrame(model: model, width: width, height: height), to: dir.appending(path: "\(name).png"))
+            // Cropped, the menu items would be cut off on one side only.
+            let background = DocsBackground(menuBarHeight: model.notchSize.height, showsMenuItems: width == DocsFrame.fullWidth)
+            let backdrop = SnapshotBackdrop.make(size: CGSize(width: DocsFrame.fullWidth, height: height)) { background }
+            save(DocsFrame(model: model, background: background, backdrop: backdrop, width: width, height: height),
+                 to: dir.appending(path: "\(name).png"))
         }
         let pair = DocsFrame.pairWidth
 
@@ -37,11 +41,15 @@ enum DocsImages {
         nowPlaying.setArtwork(artwork(), accent: NSColor(hue: 0.9, saturation: 0.55, brightness: 1, alpha: 1))
         render("now-playing", height: 76)
         model.state = .expanded
-        settings.glassTint = GlassTint(red: 0.62, green: 0.45, blue: 1.0)
         render("hero", height: 214)
+        // Glass: adaptive (the default), then a color of your own.
         model.state = .peeking
-        render("glass-color", height: 120)
+        render("glass-adaptive", height: 120, width: pair)
+        settings.glassAdapts = false
+        settings.glassTint = GlassTint(red: 0.62, green: 0.45, blue: 1.0)
+        render("glass-color", height: 120, width: pair)
         settings.glassTint = nil
+        settings.glassAdapts = true
         model.state = .collapsed
 
         // Timer and stopwatch, with the music moving to the bubble
@@ -118,19 +126,21 @@ private struct DocsFrame: View {
     nonisolated static let pairWidth: CGFloat = 440
 
     let model: NotchViewModel
+    let background: DocsBackground
+    let backdrop: SnapshotBackdrop?
     let width: CGFloat
     let height: CGFloat
 
     var body: some View {
         ZStack(alignment: .top) {
-            DocsWallpaper()
-            // Cropped, the menu items would be cut off on one side only.
-            DocsMenuBar(height: model.notchSize.height, showsItems: width == Self.fullWidth)
+            background
             NotchRootView(model: model, actions: NowPlayingActions())
                 .environment(\.isRenderingSnapshot, true)
+                .environment(\.snapshotBackdrop, backdrop)
                 .frame(width: Self.fullWidth, height: 300, alignment: .top)
         }
         .frame(width: Self.fullWidth, height: height, alignment: .top)
+        .coordinateSpace(name: SnapshotBackdrop.space)
         .frame(width: width)  // narrower pictures keep the middle
         .clipped()
     }

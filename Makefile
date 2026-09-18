@@ -3,7 +3,7 @@ BUNDLE_ID := com.goncalopinheiro.NotchIsland
 APP       := build/$(APP_NAME).app
 CONFIG    ?= debug
 
-.PHONY: build app run stop logs cpu test snapshots docs-images docs-demo focus-check clean
+.PHONY: build app run stop logs cpu test snapshots docs-images docs-demo glass-preview focus-check clean
 
 # Compile only.
 build:
@@ -49,6 +49,11 @@ docs-images: app
 # with captions in build/demo for sharing. Every frame is drawn by the app itself.
 docs-demo: app
 	$(APP)/Contents/MacOS/$(APP_NAME) --docs-demo docs/images/demo.gif build/demo/NotchIsland-demo.mp4
+
+# Show Natural and Adaptive glass side by side for 20 seconds. The window server
+# draws the glass, so it can't be snapshotted; this is how to see it.
+glass-preview: app
+	$(APP)/Contents/MacOS/$(APP_NAME) --glass-preview
 
 # Log the shape of the Focus files and what NotchIsland reads from them. Opened
 # with `open` so it runs with the app's own Full Disk Access.

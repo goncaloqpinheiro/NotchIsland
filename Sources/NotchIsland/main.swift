@@ -5,7 +5,7 @@ import AppKit
 MainActor.assumeIsolated {
     let app = NSApplication.shared
     if DebugSnapshots.runIfRequested() || DocsImages.runIfRequested() || DocsDemo.runIfRequested()
-        || FocusDiagnostics.runIfRequested() {
+        || FocusDiagnostics.runIfRequested() || GlassPreview.runIfRequested() {
         exit(0)
     }
     let delegate = AppDelegate()

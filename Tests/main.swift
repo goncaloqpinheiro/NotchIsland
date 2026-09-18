@@ -8,6 +8,7 @@ func runTests() async {
     _ = NSApplication.shared  // menu actions are sent through NSApp
     let start = Date()
     await section("Glass and sizing") { testGlassAndSizing() }
+    await section("Adaptive glass") { await testAdaptiveMaterial() }
     await section("Timer format") { testTimerFormat() }
     await section("Clock timer records") { testClockTimerParsing() }
     await section("Clock stopwatch records") { testStopwatchParsing() }

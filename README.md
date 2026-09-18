@@ -2,7 +2,7 @@
 
 A free and open source Dynamic Island for the MacBook notch.
 
-![NotchIsland showing a song, open, with a violet glass glow around it](docs/images/hero.png)
+![NotchIsland showing a song, open, with adaptive glass glowing in the wallpaper's colors](docs/images/hero.png)
 
 NotchIsland turns the notch into a small live surface. Your music, timers, AirPods, Focus, volume and
 the lock screen all show up around the camera housing, with the springy animations of the iPhone's
@@ -81,11 +81,15 @@ Dynamic Island. Hover to peek, click to open, and it tucks back into the notch w
 
 ### Glass
 
-![The island hovered, with a colored glass glow](docs/images/glass-color.png)
+| Adaptive, the default | A color of your own |
+| --- | --- |
+| ![The hovered island with adaptive glass, violet on one side and pink on the other like the wallpaper](docs/images/glass-adaptive.png) | ![The hovered island with a violet glass color](docs/images/glass-color.png) |
 
 - A soft frosted glass appears behind the island when you hover, when it opens, when an alert shows up,
   and for a moment when your music starts, pauses or changes track.
-- Pick Frosted Glass, Liquid Glass or a plain blur, give it any color, and set its strength.
+- By default it's Adaptive: the glass glows in the colors of whatever is behind the island, the
+  wallpaper or a window, the way Liquid Glass does. It can also keep a natural grey or take any color.
+- Pick Frosted Glass, Liquid Glass or a plain blur, and set its strength.
 
 ### The small things
 
@@ -103,8 +107,9 @@ Dynamic Island. Hover to peek, click to open, and it tucks back into the notch w
 - **Almost no CPU when idle.** Nothing polls in the background. The app waits for macOS to announce
   a change and only then does any work. Measured on a MacBook Air M3: 0.00 to 0.02 seconds of CPU time
   per 10 seconds while idle.
-- **Glass that shows up when something happens.** It lights up for alerts and media changes, then gets
-  out of the way, so nothing blurs in the background while a song plays for hours.
+- **Glass that adapts, and shows up when something happens.** It glows in the colors behind the island,
+  lights up for alerts and media changes, then gets out of the way, so nothing blurs in the background
+  while a song plays for hours.
 - **Built with care for the details.** The animations never shrink the island past the notch, the
   countdown redraws once a second and only while it's visible, and the side elements are balanced so
   nothing hugs an edge.

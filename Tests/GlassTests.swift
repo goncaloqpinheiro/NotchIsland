@@ -45,15 +45,28 @@ func testGlassAndSizing() {
     defaults.set("clear", forKey: "glassStyle")  // a style from an older build
     check("an unknown stored style falls back", AppSettings(defaults: defaults).glass == .frosted)
 
-    // Glass color: natural by default, a remembered custom color otherwise.
+    // Glass color: adaptive by default, which takes its color from what's behind
+    // and so has no tint of its own; a custom color is remembered.
     let colored = AppSettings(defaults: defaults)
     let colorModel = NotchViewModel(settings: colored, nowPlaying: NowPlayingModel())
-    check("the glass keeps its natural look by default", colored.glassTint == nil && colorModel.glassTint == nil)
+    check("adaptive glass is the default, with no tint of its own", colored.glassAdapts && colored.glassTint == nil
+          && colorModel.glassAdapts && colorModel.glassTint == nil)
     let pink = GlassTint(red: 1, green: 0.35, blue: 0.65)
+    colored.glassAdapts = false
     colored.glassTint = pink
-    check("a glass color is remembered", AppSettings(defaults: defaults).glassTint == pink && colorModel.glassTint == pink)
+    check("a glass color is remembered", AppSettings(defaults: defaults).glassTint == pink
+          && !AppSettings(defaults: defaults).glassAdapts && colorModel.glassTint == pink)
+    colored.glassAdapts = true
+    check("adaptive glass drops the color while it's on", colorModel.glassTint == nil)
+    colored.glassAdapts = false
+    check("turning it off brings the color back", colorModel.glassTint == pink)
     colored.glassTint = nil
-    check("going back to Natural forgets it", AppSettings(defaults: defaults).glassTint == nil)
+    check("going back to Natural forgets the color and stays natural", AppSettings(defaults: defaults).glassTint == nil
+          && !AppSettings(defaults: defaults).glassAdapts)
+    let older = ScratchDefaults.make("glass-older")
+    older.set(pink.stored, forKey: "glassTint")
+    let upgraded = AppSettings(defaults: older)
+    check("a color picked before adaptive glass existed stays", !upgraded.glassAdapts && upgraded.glassTint == pink)
     check("the color follows the Strength slider", GlassTint.opacity(forStrength: 0) == 0.3 && GlassTint.opacity(forStrength: 1) == 0.8)
     let roundTrip = GlassTint(GlassTint.starting.color)
     check("colors survive the color well", abs(roundTrip.red - GlassTint.starting.red) < 0.01
@@ -136,4 +149,42 @@ func testMediaGlass() async {
     nowPlaying.apply(source: nil, snapshot: nil)
     await wait(0.4)
     check("music stopping leaves the bare notch dark", !model.showsMediaGlass && !model.showsHalo && model.resting == .notch)
+}
+
+/// The material's layers are macOS's own, so check they're still there and
+/// that adaptive glass changes them the way it means to.
+@MainActor
+func testAdaptiveMaterial() async {
+    func material(adapts: Bool) async -> [String: CALayer] {
+        let view = AdaptiveEffectView(frame: CGRect(x: 0, y: 0, width: 200, height: 100))
+        view.material = .underWindowBackground
+        view.blendingMode = .behindWindow
+        view.state = .active
+        view.appearance = NSAppearance(named: .darkAqua)
+        view.adapts = adapts
+        let window = NSWindow(contentRect: CGRect(x: -30_000, y: -30_000, width: 200, height: 100),
+                              styleMask: .borderless, backing: .buffered, defer: false)
+        window.contentView = view
+        window.orderFrontRegardless()
+        await wait(0.3)
+        view.frame.size = CGSize(width: 260, height: 140)  // the island changes size all the time
+        view.layoutSubtreeIfNeeded()
+        await wait(0.2)
+        window.orderOut(nil)
+        let parts = (view.layer?.sublayers ?? []).flatMap { $0.sublayers ?? [] }
+        return Dictionary(parts.compactMap { part in part.name.map { ($0, part) } }, uniquingKeysWith: { first, _ in first })
+    }
+
+    let natural = await material(adapts: false)
+    guard natural["backdrop"] != nil, natural["fill"] != nil else {
+        info("this macOS builds the material differently; adaptive glass stays natural")
+        check("without the known layers, adaptive glass leaves the material alone", true)
+        return
+    }
+    let adapted = await material(adapts: true)
+    let saturation = adapted["backdrop"]?.value(forKeyPath: "filters.colorSaturate.inputAmount") as? Double
+    check("natural glass keeps its grey", natural["fill"]?.opacity == 1 && natural["tone"]?.opacity == 1)
+    check("adaptive glass swaps the grey for a light milk", adapted["fill"]?.backgroundColor == AdaptiveEffectView.milk
+          && adapted["tone"]?.opacity == 0 && adapted["desktop tint"].map { $0.opacity == 0 } ?? true)
+    check("and saturates the colors behind it a little more", saturation == AdaptiveEffectView.saturation)
 }

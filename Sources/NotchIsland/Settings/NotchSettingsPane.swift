@@ -5,19 +5,20 @@ struct NotchSettingsPane: View {
     @Bindable var settings: AppSettings
     let model: NotchViewModel
 
-    /// The last custom color, so switching to Natural and back keeps it.
+    /// The last custom color, so switching away and back keeps it.
     @State private var lastTint: GlassTint?
 
-    private var tintIsCustom: Binding<Bool> {
+    private enum GlassColor: Hashable {
+        case natural, adaptive, custom
+    }
+
+    private var glassColor: Binding<GlassColor> {
         Binding(
-            get: { settings.glassTint != nil },
-            set: { custom in
-                if custom {
-                    settings.glassTint = settings.glassTint ?? lastTint ?? .starting
-                } else {
-                    lastTint = settings.glassTint ?? lastTint
-                    settings.glassTint = nil
-                }
+            get: { settings.glassAdapts ? .adaptive : settings.glassTint != nil ? .custom : .natural },
+            set: { choice in
+                lastTint = settings.glassTint ?? lastTint
+                settings.glassAdapts = choice == .adaptive
+                settings.glassTint = choice == .custom ? lastTint ?? .starting : nil
             })
     }
 
@@ -67,9 +68,15 @@ struct NotchSettingsPane: View {
                             .frame(width: 56, alignment: .trailing)
                     }
                 }
-                Picker("Glass color", selection: tintIsCustom) {
-                    Text("Natural").tag(false)
-                    Text("Custom").tag(true)
+                Picker("Glass color", selection: glassColor) {
+                    Text("Adaptive").tag(GlassColor.adaptive)
+                    Text("Natural").tag(GlassColor.natural)
+                    Text("Custom").tag(GlassColor.custom)
+                }
+                if settings.glassAdapts && settings.glass != .liquid {
+                    Text("Takes its color from whatever is behind the island.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
                 }
                 if let tint = settings.glassTint {
                     ColorPicker("Color", selection: Binding(get: { tint.color },

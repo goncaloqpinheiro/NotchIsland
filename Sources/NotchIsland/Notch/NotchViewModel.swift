@@ -90,7 +90,9 @@ final class NotchViewModel {
     var glass: IslandGlass { settings.glass }
 
     /// The glass's color from Settings, or nil for its natural look.
-    var glassTint: GlassTint? { settings.glassTint }
+    /// Adaptive glass takes its color from what's behind it, so it has no tint of its own.
+    var glassTint: GlassTint? { settings.glassAdapts ? nil : settings.glassTint }
+    var glassAdapts: Bool { settings.glassAdapts }
 
     /// Whether the backdrop blur shows around the island.
     var showsHalo: Bool {

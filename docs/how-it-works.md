@@ -58,6 +58,19 @@ Settings picks what shows behind the island:
 A glass color can stay Natural or be any custom color: a soft glow in the blur's own feathered shape
 (Liquid Glass takes it as its tint). Everything follows the Strength slider.
 
+**Adaptive** glass, the default (unless a custom color was picked before it existed), reuses the
+material itself. Inside, the material is a live copy of what's behind the
+window, kept up to date by the window server, blurred and saturated 2.4 times, under a dark grey fill
+at 80% that washes the colors out. Adaptive glass swaps that grey for a 16% white and saturates a bit
+more (2.8), so it glows in the colors around the island: the wallpaper, a window, anything. The app
+captures and samples nothing, and it costs no more than the natural glass. The layers are macOS's own;
+if a future version builds the material differently, the glass stays natural (and `make test` says so).
+`make glass-preview` shows Natural and Adaptive side by side over colorful backgrounds.
+
+The README's pictures and demo are drawn by the app, where the window server's glass can't appear. So
+they draw adaptive glass themselves: they know the wallpaper behind the island, and blur, saturate and
+whiten it the same way with Core Image (`SnapshotBackdrop`), checked against captures of the real glass.
+
 The glass only exists while the island is hovered or open, or showing something that came and went on
 its own (an AirPods card, a Focus change, volume, battery, a finished timer, the lock), and for 2.5 s
 after a media interaction (music starting, pausing, resuming, or a new track). It stays off for the
@@ -183,6 +196,7 @@ make test         # build and run the checks in Tests/ (add ARGS=--verbose to li
 make snapshots    # render every island state and Settings to build/snapshots
 make docs-images  # render the README's pictures into docs/images
 make docs-demo    # render the README's animated demo and a 1080p movie of it
+make glass-preview  # Natural and Adaptive glass side by side for 20 seconds
 make focus-check  # log the Focus files' shape and what the app reads (needs Full Disk Access)
 make clean
 ```

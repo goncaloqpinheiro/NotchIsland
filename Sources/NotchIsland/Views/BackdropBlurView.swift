@@ -8,9 +8,12 @@ struct BackdropBlurView: NSViewRepresentable {
     /// 0...1. The material's own blur is fixed, so strength is its opacity:
     /// low values mix a little blur into the sharp background.
     var strength: Double
+    /// Takes its color from what's behind (see `AdaptiveEffectView`).
+    var adapts = false
 
     func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
+        let view = AdaptiveEffectView()
+        view.adapts = adapts
         // One of the most transparent materials, so it softens rather than darkens.
         view.material = .underWindowBackground
         view.blendingMode = .behindWindow
@@ -45,4 +48,62 @@ struct BackdropBlurView: NSViewRepresentable {
         image.resizingMode = .stretch
         return image
     }()
+}
+
+/// A material that can take its color from what's behind it. The material is
+/// a live copy of what's behind the window (wallpaper, windows, anything),
+/// blurred and saturated by the window server, under a dark grey fill and
+/// tone that wash those colors out. Adaptive glass swaps the grey for a light
+/// milky layer and saturates a bit more, so it glows in the colors around the
+/// island, like frosted glass would. Nothing is captured or sampled by the app.
+/// If a future macOS builds the material differently, it stays natural.
+final class AdaptiveEffectView: NSVisualEffectView {
+    var adapts = false {
+        didSet { adapt() }
+    }
+
+    /// The white over the blurred colors, and how much more vivid they get
+    /// (the material's own saturation is 2.4).
+    static let milk = CGColor(gray: 1, alpha: 0.16)
+    static let saturation = 2.8
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        adapt()
+    }
+
+    override func layout() {
+        super.layout()
+        adapt()
+    }
+
+    override func updateLayer() {
+        super.updateLayer()
+        adapt()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        adapt()
+    }
+
+    private func adapt() {
+        guard adapts else { return }
+        for material in layer?.sublayers ?? [] {
+            for part in material.sublayers ?? [] {
+                switch part.name {
+                case "backdrop":
+                    part.setValue(Self.saturation, forKeyPath: "filters.colorSaturate.inputAmount")
+                case "fill":
+                    part.backgroundColor = Self.milk
+                    part.opacity = 1
+                case "tone", "desktop tint":
+                    // The tone darkens; the tint is the whole desktop's color, not what's behind.
+                    part.opacity = 0
+                default:
+                    break
+                }
+            }
+        }
+    }
 }

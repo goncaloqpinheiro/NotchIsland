@@ -12,7 +12,8 @@ struct NotchRootView: View {
             if model.showsHalo {
                 let spread = model.glass.spread
                 IslandBackdrop(glass: model.glass, strength: model.blurStrength,
-                               cornerRadius: model.bottomCornerRadius + spread, tint: model.glassTint)
+                               cornerRadius: model.bottomCornerRadius + spread, tint: model.glassTint,
+                               adapts: model.glassAdapts)
                     .frame(width: model.shapeSize.width + 2 * spread,
                            height: model.shapeSize.height + 2 * spread)
                     // Push the top above the screen edge, so it reaches all the way up to it.

@@ -41,3 +41,17 @@ struct DocsMenuBar: View {
         .padding(.horizontal, 18)
     }
 }
+
+/// The top of the screen behind the island: the wallpaper and the menu bar.
+/// Also what adaptive glass is prepared from (see `SnapshotBackdrop.make`).
+struct DocsBackground: View {
+    let menuBarHeight: CGFloat
+    let showsMenuItems: Bool
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            DocsWallpaper()
+            DocsMenuBar(height: menuBarHeight, showsItems: showsMenuItems)
+        }
+    }
+}

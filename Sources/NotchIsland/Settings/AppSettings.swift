@@ -19,6 +19,7 @@ final class AppSettings {
         static let glassStyle = "glassStyle"
         static let lockStyle = "lockStyle"
         static let glassTint = "glassTint"
+        static let glassAdapts = "glassAdaptive"
     }
 
     /// Points added to the detected notch width (negative shrinks it).
@@ -61,6 +62,13 @@ final class AppSettings {
                 defaults.removeObject(forKey: Key.glassTint)
             }
         }
+    }
+
+    /// Glass that takes its color from whatever is behind it, instead of a set
+    /// color or its natural grey. The default, unless a custom color was picked
+    /// before it existed.
+    var glassAdapts: Bool {
+        didSet { defaults.set(glassAdapts, forKey: Key.glassAdapts) }
     }
 
     /// How the lock shows while locked and when unlocking.
@@ -106,7 +114,9 @@ final class AppSettings {
         blurStrength = defaults.double(forKey: Key.blurStrength)
         glass = IslandGlass(rawValue: defaults.string(forKey: Key.glassStyle) ?? "") ?? .frosted
         lockStyle = LockStyle(rawValue: defaults.string(forKey: Key.lockStyle) ?? "") ?? .centered
-        glassTint = GlassTint(stored: defaults.array(forKey: Key.glassTint))
+        let storedTint = GlassTint(stored: defaults.array(forKey: Key.glassTint))
+        glassTint = storedTint
+        glassAdapts = defaults.object(forKey: Key.glassAdapts) as? Bool ?? (storedTint == nil)
         showsSystemHUD = defaults.bool(forKey: Key.showsSystemHUD)
         didPromptForAccessibility = defaults.bool(forKey: Key.didPromptForAccessibility)
         showsDeviceAlerts = defaults.bool(forKey: Key.showsDeviceAlerts)

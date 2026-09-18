@@ -1,4 +1,5 @@
 import AppKit
+import CoreImage
 import SwiftUI
 
 /// What shows behind the island while it's hovered or open.
@@ -97,11 +98,18 @@ struct IslandBackdrop: View {
     var cornerRadius: CGFloat
     /// A color from Settings, or nil for the glass's natural look.
     var tint: GlassTint?
+    /// Color from whatever is behind, instead of the blur's grey (see BackdropBlurView).
+    var adapts = false
     @Environment(\.isRenderingSnapshot) private var isRenderingSnapshot
+    @Environment(\.snapshotBackdrop) private var snapshotBackdrop
 
     var body: some View {
         let opacity = glass.opacity(forStrength: strength)
         ZStack {
+            if isRenderingSnapshot, adapts, tint == nil, let snapshotBackdrop {
+                SnapshotGlass(backdrop: snapshotBackdrop)
+                    .opacity(opacity)
+            }
             // Blur and Liquid Glass come from the window server, which snapshots can't draw.
             if !isRenderingSnapshot {
                 #if compiler(>=6.2)
@@ -109,10 +117,12 @@ struct IslandBackdrop: View {
                     GlassBackdrop(opacity: opacity, cornerRadius: cornerRadius,
                                   tint: tint.map { NSColor($0.color).withAlphaComponent(GlassTint.opacity(forStrength: strength)) })
                 } else {
-                    BackdropBlurView(strength: opacity)
+                    BackdropBlurView(strength: opacity, adapts: adapts)
+                        .id(adapts)  // a fresh material when switching back to natural
                 }
                 #else
-                BackdropBlurView(strength: opacity)
+                BackdropBlurView(strength: opacity, adapts: adapts)
+                    .id(adapts)
                 #endif
             }
             if let tint, !glass.usesLiquidGlass {
@@ -120,6 +130,57 @@ struct IslandBackdrop: View {
                     .opacity(GlassTint.opacity(forStrength: strength))
             }
         }
+    }
+}
+
+/// Adaptive glass for snapshots, which can't show the window server's: the
+/// part of the prepared backdrop behind the island, in the blur's feathered shape.
+private struct SnapshotGlass: View {
+    let backdrop: SnapshotBackdrop
+
+    var body: some View {
+        let spread = NotchStyle.haloSpread
+        GeometryReader { geometry in
+            let frame = geometry.frame(in: .named(SnapshotBackdrop.space))
+            Image(decorative: backdrop.glass, scale: 2)
+                .resizable()
+                .frame(width: backdrop.size.width, height: backdrop.size.height)
+                .offset(x: -frame.minX, y: -frame.minY)
+        }
+        .mask {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(.black)
+                .padding(spread * 0.6)
+                .blur(radius: spread * 0.35)
+        }
+    }
+}
+
+extension SnapshotBackdrop {
+    /// How far the window server's blur spreads the colors behind the glass
+    /// (a Gaussian's standard deviation, in points).
+    static let blur: CGFloat = 5
+
+    /// Works in plain sRGB, as the window server's filters do; in linear light the
+    /// milk reads stronger and the colors paler.
+    private static let context = CIContext(options: [.workingColorSpace: CGColorSpace(name: CGColorSpace.sRGB)!])
+
+    /// Prepares what's behind the island once, the way adaptive glass shows it:
+    /// blurred and saturated like the material, under the same milk. Core Image
+    /// does the work, since SwiftUI's blur doesn't render reliably in snapshots.
+    @MainActor
+    static func make(size: CGSize, @ViewBuilder content: () -> some View) -> SnapshotBackdrop? {
+        let scale: CGFloat = 2
+        let renderer = ImageRenderer(content: content().frame(width: size.width, height: size.height))
+        renderer.scale = scale
+        guard let sharp = renderer.cgImage else { return nil }
+        let behind = CIImage(cgImage: sharp)
+        let glass = CIImage(color: CIColor(cgColor: AdaptiveEffectView.milk)).composited(over: behind
+            .clampedToExtent()
+            .applyingGaussianBlur(sigma: blur * scale)
+            .applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: AdaptiveEffectView.saturation])
+            .cropped(to: behind.extent))
+        return context.createCGImage(glass, from: behind.extent).map { SnapshotBackdrop(size: size, glass: $0) }
     }
 }
 

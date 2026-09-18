@@ -26,3 +26,24 @@ extension EnvironmentValues {
         set { self[SnapshotTimeKey.self] = newValue }
     }
 }
+
+/// What's behind the island in a snapshot, so adaptive glass can be drawn the
+/// way the window server draws it. The view that provides it names the
+/// coordinate space `space`, which `glass` fills at `size`.
+struct SnapshotBackdrop {
+    static let space = "snapshotBackdrop"
+    let size: CGSize
+    /// What's behind, already blurred, saturated and milky (see `make`).
+    let glass: CGImage
+}
+
+private struct SnapshotBackdropKey: EnvironmentKey {
+    static let defaultValue: SnapshotBackdrop? = nil
+}
+
+extension EnvironmentValues {
+    var snapshotBackdrop: SnapshotBackdrop? {
+        get { self[SnapshotBackdropKey.self] }
+        set { self[SnapshotBackdropKey.self] = newValue }
+    }
+}
