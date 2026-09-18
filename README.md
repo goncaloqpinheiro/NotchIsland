@@ -2,7 +2,7 @@
 
 A free and open source Dynamic Island for the MacBook notch.
 
-![NotchIsland Intro Video](docs/images/NotchIsland (2).mp4)
+![NotchIsland showing a song, open, with adaptive glass glowing in the wallpaper's colors](docs/images/hero.png)
 
 NotchIsland turns the notch into a small live surface. Your music, timers, AirPods, Focus, volume and
 the lock screen all show up around the camera housing, with the springy animations of the iPhone's
